@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T08:10:00Z",
+  "title": "Design System: sprout",
+  "extensions": {
+    "colorMeta": {
+      "sprout-green": { "role": "primary", "displayName": "Sprout Green", "canonical": "#00c471", "tonalRamp": ["#003d22", "#00663a", "#00a760", "#00c471", "#5fd9a2", "#b8eed5", "#e5f9f0", "#f2fcf7"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1b1c1d", "tonalRamp": ["#121314", "#1b1c1d", "#3e4042", "#6a7077", "#abb0b5", "#e4e6e8", "#eff1f3", "#f8f9fa"] },
+      "mistake-red": { "role": "semantic", "displayName": "Mistake Red", "canonical": "#e5503c", "tonalRamp": ["#5c1a11", "#9a2b1c", "#c93f2c", "#e5503c", "#ee8577", "#f6b9b0", "#fbdcd7", "#fdeeec"] },
+      "caution-amber": { "role": "semantic", "displayName": "Caution Amber", "canonical": "#f59f00", "tonalRamp": ["#4d3100", "#7a4b00", "#b26a00", "#f59f00", "#ffc04d", "#ffdb94", "#ffecc2", "#fff6e0"] },
+      "signal-blue": { "role": "semantic", "displayName": "Signal Blue", "canonical": "#3e7bfa", "tonalRamp": ["#0d2a66", "#1a46a8", "#2c62db", "#3e7bfa", "#7ca4fc", "#b3cbfd", "#dbe6fe", "#eef4ff"] },
+      "player-black": { "role": "neutral", "displayName": "Player Black", "canonical": "#121314" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "학습 자료 제목, 로그인 헤드라인." },
+      "headline": { "displayName": "Headline", "purpose": "페이지 제목, 구간 제목." },
+      "title": { "displayName": "Title", "purpose": "카드 제목, 문제 지문." },
+      "reading": { "displayName": "Reading", "purpose": "학습 자료 본문, 최대 760px." },
+      "body": { "displayName": "Body", "purpose": "UI 본문과 채팅." },
+      "label": { "displayName": "Label", "purpose": "칩, 캡션, 메타." },
+      "code": { "displayName": "Code", "purpose": "SQL과 결과값 전용." }
+    },
+    "shadows": [
+      { "name": "rest", "value": "0 2px 8px rgba(0,0,0,0.06)", "purpose": "채팅 입력창, 채팅 속 퀴즈 카드." },
+      { "name": "pop", "value": "0 8px 24px rgba(0,0,0,0.12)", "purpose": "선택 팝오버, 토스트." }
+    ],
+    "motion": [
+      { "name": "state", "value": "0.15s ease", "purpose": "버튼 배경·테두리 전환." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "860px" },
+      { "name": "medium", "value": "1080px" }
+    ]
+  },
+  "components": [
+    { "name": "Primary Button", "kind": "button", "refersTo": "button-primary", "description": "다음 행동. 화면당 하나 위주.", "html": "<button class=\"ds-btn-primary\">확인 문제 풀기</button>", "css": ".ds-btn-primary{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:6px;border:1px solid #00c471;background:#00c471;color:#fff;font:600 14px 'Pretendard Variable',Pretendard,sans-serif;cursor:pointer;transition:background .15s}.ds-btn-primary:hover{background:#00a760;border-color:#00a760}.ds-btn-primary:focus-visible{outline:2px solid #00c471;outline-offset:2px}" },
+    { "name": "Default Button", "kind": "button", "refersTo": "button-default", "description": "보조 행동.", "html": "<button class=\"ds-btn\">자료 올리기</button>", "css": ".ds-btn{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:6px;border:1px solid #e4e6e8;background:#fff;color:#1b1c1d;font:600 14px 'Pretendard Variable',Pretendard,sans-serif;cursor:pointer;transition:background .15s}.ds-btn:hover{background:#f8f9fa}.ds-btn:focus-visible{outline:2px solid #00c471;outline-offset:2px}" },
+    { "name": "Status Chips", "kind": "chip", "refersTo": "chip", "description": "오답 원인과 학습 상태.", "html": "<span class=\"ds-chip ok\">정답</span> <span class=\"ds-chip no\">개념 혼동</span> <span class=\"ds-chip warn\">찍어서 맞힘</span> <span class=\"ds-chip info\">3일 뒤</span>", "css": ".ds-chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;font:600 12px 'Pretendard Variable',Pretendard,sans-serif}.ds-chip.ok{background:#e5f9f0;color:#00a760}.ds-chip.no{background:#fdeeec;color:#e5503c}.ds-chip.warn{background:#fff6e0;color:#b26a00}.ds-chip.info{background:#eef4ff;color:#3e7bfa}" },
+    { "name": "Text Input", "kind": "input", "refersTo": "input", "description": "기본 입력.", "html": "<input class=\"ds-input\" placeholder=\"이름\">", "css": ".ds-input{height:44px;padding:0 12px;border:1px solid #e4e6e8;border-radius:6px;background:#fff;color:#1b1c1d;font:14px 'Pretendard Variable',Pretendard,sans-serif}.ds-input:focus{outline:none;border-color:#00c471}" },
+    { "name": "Card", "kind": "card", "refersTo": "card", "description": "대시보드 카드. 평평하게.", "html": "<div class=\"ds-card\"><div class=\"ds-card-t\">개념별 이해도</div><div class=\"ds-card-b\">WHERE와 HAVING · 0%</div></div>", "css": ".ds-card{background:#fff;border:1px solid #e4e6e8;border-radius:8px;padding:20px;font-family:'Pretendard Variable',Pretendard,sans-serif}.ds-card-t{font-weight:700;font-size:15px;color:#1b1c1d;margin-bottom:8px}.ds-card-b{font-size:13px;color:#6a7077}" },
+    { "name": "Quiz Options", "kind": "custom", "refersTo": "quiz-option", "description": "확인 문제 선택지와 채점 상태.", "html": "<div class=\"ds-opts\"><button class=\"ds-opt right\"><span class=\"k\">A</span>HAVING</button><button class=\"ds-opt wrong\"><span class=\"k\">B</span>WHERE</button><button class=\"ds-opt\"><span class=\"k\">C</span>ORDER BY</button></div>", "css": ".ds-opts{display:flex;flex-direction:column;gap:8px;font-family:'Pretendard Variable',Pretendard,sans-serif}.ds-opt{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #e4e6e8;border-radius:8px;background:#fff;font-size:14px;text-align:left;cursor:pointer}.ds-opt:hover{border-color:#abb0b5}.ds-opt .k{width:22px;height:22px;border-radius:50%;background:#eff1f3;display:grid;place-items:center;font-size:11px;font-weight:700;color:#6a7077}.ds-opt.right{border-color:#00c471;background:#f2fcf7}.ds-opt.right .k{background:#00c471;color:#fff}.ds-opt.wrong{border-color:#e5503c;background:#fdeeec}.ds-opt.wrong .k{background:#e5503c;color:#fff}" },
+    { "name": "Workspace Bar", "kind": "nav", "refersTo": "workspace-bar", "description": "학습 모드 상단 바.", "html": "<div class=\"ds-wsbar\"><span>← 내 학습</span><b>GROUP BY와 HAVING</b><span class=\"p\">40% 진행 중</span></div>", "css": ".ds-wsbar{display:flex;align-items:center;gap:14px;height:56px;padding:0 16px;background:#121314;color:#e9ecef;font:600 14px 'Pretendard Variable',Pretendard,sans-serif}.ds-wsbar b{color:#fff;font-size:16px}.ds-wsbar .p{height:22px;padding:0 8px;border-radius:4px;background:#e5f9f0;color:#00a760;font-size:12px;display:inline-flex;align-items:center}" }
+  ],
+  "narrative": {
+    "northStar": "조용한 자습실 (The Quiet Study Room)",
+    "overview": "sprout는 학습자가 자료를 읽는 데 집중하는 조용한 자습실이다. 바탕은 흰 종이와 아주 옅은 회색이고, 초록은 \"지금 해야 할 다음 행동\"과 \"스스로 해냈다는 증거\"에만 쓰인다. AI는 방 한가운데가 아니라 옆자리에 앉아 있다: 오른쪽 패널과 아이콘 레일에 머무르다 학습자가 부르면 짧게 돕고, 설명 뒤에는 확인 문제로 넘겨준다.\n\n밀도는 학습 도구답게 중간 이상이다. 대시보드는 카드 격자로 상태를 한눈에 보여주고, 워크스페이스는 읽기 영역에 넉넉한 줄간격(1.8)을 준다. 장식은 거의 없다. 깊이감은 그림자가 아니라 얇은 테두리와 옅은 회색 면으로 만든다.",
+    "keyCharacteristics": ["흰 바탕 + 절제된 초록(#00c471) 한 가지 강조색", "의미 색(정답 초록 · 오답 빨강 · 확신 낮음 주황 · 정보 파랑)은 칩과 결과 바에만", "학습 워크스페이스 상단은 검은 플레이어 바(#121314)로 \"학습 모드\"를 구분", "얇은 1px 테두리, 6–12px 모서리, 그림자는 떠 있는 요소에만", "픽셀 새싹 캐릭터가 AI의 얼굴"],
+    "rules": [
+      { "name": "The One Green Rule", "body": "초록은 다음 행동과 성취 증거에만 쓴다. 장식 배경이나 큰 면을 초록으로 칠하지 않는다.", "section": "colors" },
+      { "name": "The Evidence Color Rule", "body": "빨강·주황은 학습자의 실수 데이터를 표시할 때만 쓴다. 경고 장식이나 강조용으로 빌려 쓰지 않는다.", "section": "colors" },
+      { "name": "The Keep-All Rule", "body": "한국어는 단어 중간에서 줄을 바꾸지 않는다(word-break: keep-all). 제목은 text-wrap: balance.", "section": "typography" },
+      { "name": "The Code Is Data Rule", "body": "고정폭 글꼴은 SQL·결과값에만. 제목이나 썸네일을 \"기술적으로\" 보이게 하려고 쓰지 않는다.", "section": "typography" },
+      { "name": "The Flat Desk Rule", "body": "대시보드 카드와 버튼에는 그림자를 넣지 않는다. 떠 있는 것만 그림자를 가진다.", "section": "elevation" }
+    ],
+    "dos": ["설명 뒤에 항상 확인 행동(문제로 확인 버튼, 확인 CTA)을 초록으로 붙인다.", "학습 상태를 칩과 진행 바로 형태화한다(숫자만 두지 않는다).", "보조 텍스트는 Slate(#6a7077) 이상 진하기로 쓴다.", "숫자가 줄 맞춰 나오는 곳에 tabular-nums."],
+    "donts": ["카드나 콜아웃에 2px 이상 한쪽 색 띠를 두지 않는다.", "이모지나 ●○ 같은 문자로 아이콘을 대신하지 않는다(lucide 아이콘 + 직접 그린 SVG).", "장식용 그라데이션 블롭, 글래스 효과를 넣지 않는다.", "인프런 이름·로고를 쓰지 않는다. sprout는 독립 브랜드다."]
+  }
+}
