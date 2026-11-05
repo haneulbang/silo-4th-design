@@ -7,7 +7,7 @@ import { CONCEPTS, type Material, type Section } from "../data/materials";
 import { getQuestion, variantOf } from "../data/questions";
 import { summaryOf } from "../lib/agent";
 import { useDueReviews, useStore, type Review } from "../store";
-import { timeAgo } from "../pages/Dashboard";
+import { timeAgo } from "../lib/time";
 
 export function SummaryTab({ material, onJump }: { material: Material; onJump: (sectionId: string) => void }) {
   const items = summaryOf(material);

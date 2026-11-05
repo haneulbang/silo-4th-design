@@ -2,6 +2,7 @@ import { Bell, Grid3x3, Globe, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../store";
 import { Logo } from "./Brand";
+import { HOME } from "../App";
 
 export function Header() {
   const { state, dispatch } = useStore();
@@ -9,7 +10,7 @@ export function Header() {
   return (
     <header className="gnb">
       <div className="gnb-main">
-        <Link to={state.user ? "/my" : "/login"} aria-label="홈">
+        <Link to={state.user ? HOME : "/login"} aria-label="홈">
           <Logo />
         </Link>
         <div className="gnb-right">

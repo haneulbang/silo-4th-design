@@ -1,16 +1,19 @@
-import { ArrowLeft, BookMarked, MessageCircle, NotebookPen, Plus, RotateCcw, Share2, X } from "lucide-react";
+import { Menu, SquarePen, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { Mascot } from "../components/Brand";
 import { useToast } from "../components/Toast";
 import { getMaterial } from "../data/materials";
-import { isLive } from "../lib/agent";
-import { todayKey, useDueReviews, useStore } from "../store";
+import { useStore } from "../store";
 import { AgentChat, type Command } from "../workspace/AgentChat";
 import { Reader, type SelAction } from "../workspace/Reader";
-import { NoteTab, ReviewTab, SummaryTab } from "../workspace/SidePanels";
+import { PanelMenu } from "../workspace/PanelMenu";
+import { ToneMenu } from "../workspace/ToneMenu";
+import { UnitMenu } from "../workspace/UnitMenu";
+import { QuizTab } from "../workspace/QuizTab";
+import { HOME } from "../App";
 
-type Tab = "agent" | "summary" | "review" | "note";
+type Tab = "agent" | "review";
 
 const SEL_PROMPT: Record<Exclude<SelAction, "note" | "check">, string> = {
   easy: "이 부분을 쉽게 설명해줘",
@@ -25,20 +28,15 @@ export function Workspace() {
   const material = getMaterial(id);
   const { state, dispatch } = useStore();
   const toast = useToast();
-  const due = useDueReviews();
-  const initialTab = (params.get("tab") as Tab) ?? "agent";
+  const initialTab: Tab = params.get("tab") === "review" ? "review" : "agent";
   const [tab, setTab] = useState<Tab>(initialTab);
   const [open, setOpen] = useState(true);
   const [active, setActive] = useState(params.get("section") ?? "intro");
   const [scrollTo] = useState(() => (params.get("section") ? { id: params.get("section")!, n: 0 } : null));
   const [command, setCommand] = useState<Command | null>(null);
-  const [reviewPreset, setReviewPreset] = useState<string | undefined>();
-  const [live, setLive] = useState<boolean | null>(null);
+  const [reviewPreset] = useState<string | undefined>();
+  const [menuOpen, setMenuOpen] = useState(false);
   const n = useRef(0);
-
-  useEffect(() => {
-    isLive().then(setLive);
-  }, []);
 
   // Count study time while the tab is visible.
   useEffect(() => {
@@ -67,10 +65,9 @@ export function Workspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!material) return <Navigate to="/my/library" replace />;
+  if (!material) return <Navigate to={HOME} replace />;
   const section = material.sections.find((s) => s.id === active);
-  const readCount = (state.read[material.id] ?? []).length;
-  const checksToday = state.attempts.filter((a) => a.source === "check" && todayKey(new Date(a.at)) === todayKey()).length;
+  const hasChat = (state.chats[material.id] ?? []).length > 0;
 
   const onSelect = (a: SelAction, text: string, sectionId: string) => {
     if (a === "note") {
@@ -83,109 +80,81 @@ export function Workspace() {
     send({ kind: "ask", prompt: SEL_PROMPT[a], quote: text });
   };
 
-  const RAIL: { k: Tab; label: string; icon: typeof MessageCircle; badge?: number }[] = [
-    { k: "agent", label: "에이전트", icon: MessageCircle },
-    { k: "summary", label: "요약", icon: BookMarked },
-    { k: "review", label: "복습", icon: RotateCcw, badge: due.length },
-    { k: "note", label: "노트", icon: NotebookPen },
+  const TABS: { k: Tab; label: string }[] = [
+    { k: "agent", label: "AI 에이전트" },
+    { k: "review", label: "퀴즈" },
   ];
 
   return (
     <div className="ws">
-      <header className="ws-top">
-        <Link to="/my" className="back-round" aria-label="내 학습으로 돌아가기"><ArrowLeft size={20} /></Link>
-        <span className="title">{material.title}</span>
-        <span className="chip chip-green">{Math.round((readCount / material.sections.length) * 100)}% 진행 중</span>
-        <div className="right">
-          <span className="tbtn" title={live ? "Claude API에 연결되어 있어요" : "ANTHROPIC_API_KEY가 없어 자료 기반 데모 응답을 써요"}>
-            <span className={`live-dot ${live ? "on" : ""}`} />
-            <span className="lbl">{live === null ? "연결 확인 중" : live ? "Claude 연결됨" : "데모 모드"}</span>
-          </span>
-          <button className="tbtn" onClick={() => navigator.clipboard?.writeText(location.href).then(() => toast("링크를 복사했어요"), () => toast("이 화면에서는 링크를 복사할 수 없어요"))}>
-            <Share2 size={15} /><span className="lbl">공유</span>
-          </button>
+      <div className="ws-main">
+        <header className="ws-top">
+          <UnitMenu material={material} />
+          <span className="title">{material.title}</span>
+          <div className="right">
+            {!open && (
+              <button className="tbtn" onClick={() => setOpen(true)}>
+                <Mascot size={18} /><span className="lbl">AI 패널 열기</span>
+              </button>
+            )}
+          </div>
+        </header>
+
+        <div className="ws-body">
+          <Reader
+            material={material}
+            active={active}
+            onActive={setActive}
+            scrollTo={scrollTo}
+            onSelectAction={onSelect}
+          />
         </div>
-      </header>
+      </div>
 
-      <div className="ws-body">
-        <Reader
-          material={material}
-          active={active}
-          onActive={setActive}
-          scrollTo={scrollTo}
-          onSelectAction={onSelect}
-          onCheck={(sid) => {
-            const s = material.sections.find((x) => x.id === sid);
-            if (s?.concept) send({ kind: "quiz", concept: s.concept });
-          }}
-          onQuickReview={(concept) => {
-            setReviewPreset(concept);
-            setTab("review");
-            setOpen(true);
-          }}
-        />
-
-        {open && (
-          <aside className="panel" aria-label="AI 패널">
-            <div className="panel-head">
-              <div className="seg" role="tablist">
-                {(["agent", "summary", "review"] as Tab[]).map((t) => (
-                  <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
-                    {t === "agent" ? "AI 에이전트" : t === "summary" ? "요약" : "복습"}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {tab === "agent" && (state.chats[material.id] ?? []).length > 0 && (
+      {open && (
+        <aside className="panel" aria-label="AI 패널">
+          <div className="panel-head">
+            <span aria-hidden="true" />
+            <div className="seg" role="tablist" aria-label="AI 패널 메뉴">
+              {TABS.map(({ k, label }) => (
+                <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => { setTab(k); setMenuOpen(false); }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="panel-head-side end">
+              <button className="head-icon" aria-label="패널 닫기" title="패널 닫기" onClick={() => setOpen(false)}><X size={18} /></button>
+            </div>
+          </div>
+          {tab === "agent" && (
+            <>
+              <div className="panel-tools">
+                <button className="tool-btn" aria-label="대화 기록" title="대화 기록" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+                  <Menu size={18} />
+                </button>
+                <div className="panel-tools-end">
                   <button
-                    className="new-chat"
-                    title="처음 화면으로 돌아가요. 학습 기록은 그대로 남아요."
+                    className="tool-btn"
+                    aria-label="새 대화"
+                    disabled={!hasChat}
+                    title={hasChat ? "새 대화" : "지금이 새 대화예요"}
                     onClick={() => {
-                      dispatch({ type: "chat", materialId: material.id, messages: [] });
-                      toast("새 대화를 시작했어요");
+                      dispatch({ type: "newChat", materialId: material.id });
+                      toast("새 대화를 시작했어요. 지난 대화는 대화 기록에 있어요.");
                     }}
                   >
-                    <Plus size={15} />새 대화
+                    <SquarePen size={17} />
                   </button>
-                )}
-                <button className="icon-btn" style={{ background: "transparent" }} aria-label="패널 닫기" onClick={() => setOpen(false)}><X size={16} /></button>
+                  {hasChat && <ToneMenu />}
+                </div>
               </div>
-            </div>
-            {tab === "agent" && (
-              <div className="goal-strip">
-                <span className="strong">오늘의 목표</span>
-                <span className="muted">현재 단원 + 확인 문제 5개</span>
-                <div className="progress"><i style={{ width: `${Math.min(100, (checksToday / 5) * 100)}%` }} /></div>
-                <span className="subtle">{Math.min(checksToday, 5)}/5</span>
-              </div>
-            )}
-            {tab === "agent" && <AgentChat material={material} section={section} command={command} />}
-            {tab === "summary" && <SummaryTab material={material} onJump={(sid) => document.getElementById(`sec-${sid}`)?.scrollIntoView({ behavior: "smooth" })} />}
-            {tab === "review" && <ReviewTab key={reviewPreset ?? "list"} preset={reviewPreset} />}
-            {tab === "note" && <NoteTab material={material} section={section} />}
-          </aside>
-        )}
-
-        <nav className="rail" aria-label="도구">
-          {RAIL.map(({ k, label, icon: Icon, badge }) => (
-            <button
-              key={k}
-              className={open && tab === k ? "on" : ""}
-              onClick={() => {
-                if (open && tab === k) setOpen(false);
-                else {
-                  setTab(k);
-                  setOpen(true);
-                }
-              }}
-            >
-              {k === "agent" ? <Mascot size={24} /> : <Icon size={22} />}
-              {label}
-              {!!badge && <span className="badge">{badge}</span>}
-            </button>
-          ))}
-        </nav>
-      </div>
+              <AgentChat material={material} section={section} command={command} />
+              {menuOpen && <PanelMenu material={material} onClose={() => setMenuOpen(false)} />}
+            </>
+          )}
+          {tab === "review" && <QuizTab key={reviewPreset ?? "quiz"} material={material} section={section} preset={reviewPreset} />}
+        </aside>
+      )}
     </div>
   );
 }

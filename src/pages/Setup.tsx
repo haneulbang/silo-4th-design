@@ -7,6 +7,7 @@ import { CONCEPTS, EXAM } from "../data/materials";
 import { DIAGNOSIS_SET, getQuestion } from "../data/questions";
 import { joinWa } from "../lib/josa";
 import { daysUntil, useStore } from "../store";
+import { HOME } from "../App";
 
 const TIMES = [10, 20, 30, 60];
 
@@ -22,7 +23,7 @@ export function Setup() {
 
   const finish = (diagnosed: boolean) => {
     dispatch({ type: "setup", dailyMinutes: minutes, diagnosed });
-    nav("/my");
+    nav(HOME);
   };
 
   return (

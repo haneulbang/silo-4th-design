@@ -1,7 +1,6 @@
-import { BookmarkPlus, CheckCircle2, Circle, GitCompare, HelpCircle, Lightbulb, RotateCcw, Sparkles, Target } from "lucide-react";
+import { BookmarkPlus, GitCompare, HelpCircle, Lightbulb, Sparkles, Target } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CONCEPTS, type Block, type Material } from "../data/materials";
-import { useMastery, useStore } from "../store";
+import { type Block, type Material } from "../data/materials";
 
 export type SelAction = "easy" | "example" | "compare" | "point" | "check" | "note";
 
@@ -20,22 +19,15 @@ export function Reader({
   onActive,
   scrollTo,
   onSelectAction,
-  onCheck,
-  onQuickReview,
 }: {
   material: Material;
   active: string;
   onActive: (id: string) => void;
   scrollTo: { id: string; n: number } | null;
   onSelectAction: (a: SelAction, text: string, sectionId: string) => void;
-  onCheck: (sectionId: string) => void;
-  onQuickReview: (concept: string) => void;
 }) {
-  const { state } = useStore();
-  const mastery = useMastery();
   const ref = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<{ x: number; y: number; text: string; section: string } | null>(null);
-  const read = state.read[material.id] ?? [];
 
   useEffect(() => {
     if (!scrollTo) return;
@@ -80,7 +72,6 @@ export function Reader({
         <div className="toc-inner">
           {material.sections.map((s) => (
             <button key={s.id} className={active === s.id ? "on" : ""} onClick={() => document.getElementById(`sec-${s.id}`)?.scrollIntoView({ behavior: "smooth" })}>
-              {read.includes(s.id) ? <CheckCircle2 size={13} color="var(--green)" /> : <Circle size={13} color="var(--gray-3)" />}
               {s.title}
             </button>
           ))}
@@ -90,39 +81,14 @@ export function Reader({
       <article className="reader-inner">
         <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
           <span className="chip">{material.subject}</span>
-          <span className="chip">{material.chapter}</span>
-          <span className="chip chip-green">출제 비중 높음</span>
         </div>
         <h1>{material.title}</h1>
 
         {material.sections.map((s) => {
-          const m = s.concept ? mastery.find((x) => x.concept === s.concept) : undefined;
-          const due = s.concept ? state.reviews.find((r) => r.concept === s.concept) : undefined;
-          const ok = m?.score != null && m.score >= 0.8;
           return (
             <section key={s.id} id={`sec-${s.id}`} style={{ scrollMarginTop: 48 }}>
               {s.id !== "intro" && <div className="sec-title">{s.title}</div>}
-              {due && (
-                <div className="banner" style={{ background: "var(--amber-50)", margin: "0 0 16px" }}>
-                  <RotateCcw size={16} color="#b26a00" />
-                  <span style={{ flex: 1, fontSize: 13.5 }}>이 내용은 전에 틀리거나 헷갈렸던 문제와 관련 있어요.</span>
-                  <button className="btn btn-sm" onClick={() => onQuickReview(s.concept!)}>1분 복습</button>
-                  <button className="btn btn-sm btn-ghost">학습 후 복습</button>
-                </div>
-              )}
               {s.blocks.map((b, i) => <BlockView key={i} b={b} />)}
-              {s.concept && (
-                <div className={`check-cta ${ok ? "done" : ""}`}>
-                  {ok ? <CheckCircle2 size={20} color="var(--green)" /> : <HelpCircle size={20} color="var(--gray-3)" />}
-                  <div style={{ flex: 1 }}>
-                    <div className="strong" style={{ fontSize: 14 }}>{ok ? `${CONCEPTS[s.concept].name} 이해 확인 완료` : "이 구간, 정말 이해했을까요?"}</div>
-                    <div className="subtle">{ok ? "확신을 갖고 맞혔어요. 3일 뒤 한 번 더 확인해요." : "읽기만 하면 이해한 것 같은 착각이 들어요. 짧은 문제로 확인해요."}</div>
-                  </div>
-                  <button className={`btn btn-sm ${ok ? "" : "btn-primary"}`} onClick={() => onCheck(s.id)}>
-                    {ok ? "한 번 더" : "확인 문제 풀기"}
-                  </button>
-                </div>
-              )}
             </section>
           );
         })}
@@ -150,14 +116,35 @@ export function Reader({
   );
 }
 
+/** Inline marks from the source notes: **bold** and `code`. */
+function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\*\*(?:[^*]|\*(?!\*))+?\*\*|`[^`]+`)/g).map((part, i) =>
+        part.startsWith("**") && part.endsWith("**") ? (
+          <b key={i}>{part.slice(2, -2)}</b>
+        ) : part.startsWith("`") && part.endsWith("`") ? (
+          <code key={i} className="inline-code">{part.slice(1, -1)}</code>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 function BlockView({ b }: { b: Block }) {
   switch (b.kind) {
     case "h2":
       return <h2>{b.text}</h2>;
+    case "h3":
+      return <h3 className="reader-h3">{b.text}</h3>;
     case "p":
-      return <p>{b.text}</p>;
+      return <p><Inline text={b.text} /></p>;
     case "ul":
-      return <ul>{b.items.map((i) => <li key={i}>{i}</li>)}</ul>;
+      return <ul>{b.items.map((i) => <li key={i}><Inline text={i} /></li>)}</ul>;
+    case "ol":
+      return <ol>{b.items.map((i) => <li key={i}><Inline text={i} /></li>)}</ol>;
     case "code":
       return <pre className="mono">{b.text}</pre>;
     case "callout": {
@@ -175,7 +162,12 @@ function BlockView({ b }: { b: Block }) {
       return (
         <table>
           <thead><tr>{b.head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
-          <tbody>{b.rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={c === "NULL" ? "subtle" : ""}>{c}</td>)}</tr>)}</tbody>
+          <tbody>
+            {b.rows.length === 0 && (
+              <tr><td colSpan={b.head.length} className="subtle" style={{ textAlign: "center" }}>결과 없음 (0행)</td></tr>
+            )}
+            {b.rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={c === "NULL" ? "subtle" : ""}><Inline text={c} /></td>)}</tr>)}
+          </tbody>
         </table>
       );
   }

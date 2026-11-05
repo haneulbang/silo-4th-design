@@ -7,7 +7,7 @@ import { StoreProvider } from "./store";
 import "./styles.css";
 
 // Artifact builds run in a sandboxed frame whose URL the app doesn't own, so routes live in memory there.
-const Router = import.meta.env.MODE === "artifact" ? (p: { children: React.ReactNode }) => <MemoryRouter initialEntries={["/my"]}>{p.children}</MemoryRouter> : BrowserRouter;
+const Router = import.meta.env.MODE === "artifact" ? (p: { children: React.ReactNode }) => <MemoryRouter initialEntries={["/learn/groupby"]}>{p.children}</MemoryRouter> : BrowserRouter;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleMark, Mascot } from "../components/Brand";
 import { useStore } from "../store";
+import { HOME } from "../App";
 
 export function Login() {
   const { state, dispatch } = useStore();
@@ -11,7 +12,7 @@ export function Login() {
 
   const start = () => {
     dispatch({ type: "login", name: name.trim() || "학습자" });
-    nav(state.setup ? "/my" : "/setup");
+    nav(state.setup ? HOME : "/setup");
   };
 
   return (
