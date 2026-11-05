@@ -6,7 +6,7 @@ export function Rich({ text }: { text: string }) {
     <>
       {text.split("\n").map((line, i) => {
         const bullet = line.startsWith("- ");
-        const body = (bullet ? line.slice(2) : line).split(/(\*\*(?:[^*]|\*(?!\*))+?\*\*)/g).map((part, j) =>
+        const body = (bullet ? line.slice(2) : line).split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
           part.startsWith("**") && part.endsWith("**") ? <b key={j}>{part.slice(2, -2)}</b> : <Fragment key={j}>{part}</Fragment>,
         );
         return (

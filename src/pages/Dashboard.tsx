@@ -51,7 +51,7 @@ export function Dashboard() {
     },
     !short && { t: `확인 문제 ${minutes >= 30 ? 5 : 3}개`, m: Math.round(minutes * 0.4), done: checks >= (minutes >= 30 ? 5 : 3), to: `/learn/${focus.id}?section=${studySection.id}&ask=check` },
     { t: due.length ? `이전 오답 복습 ${due.length}개` : "이전 오답 복습", m: short ? 8 : Math.round(minutes * 0.23), done: due.length === 0 && (reviewsToday > 0 || state.reviews.length === 0), to: `/learn/${focus.id}?tab=review` },
-    { t: "마무리 확인 · 오늘 배운 것 한 줄 정리", m: short ? 2 : Math.round(minutes * 0.1), done: state.notes.some((n) => todayKey(new Date(n.at)) === today), to: `/learn/${focus.id}` },
+    { t: "마무리 확인 · 오늘 배운 것 한 줄 정리", m: short ? 2 : Math.round(minutes * 0.1), done: state.notes.some((n) => todayKey(new Date(n.at)) === today), to: `/learn/${focus.id}?tab=note` },
   ].filter(Boolean) as { t: string; m: number; done: boolean; to: string }[];
   const doneCount = plan.filter((p) => p.done).length;
 

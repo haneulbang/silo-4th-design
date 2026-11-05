@@ -1,7 +1,4 @@
 import { CONCEPTS, type Material, type Section, materialToText } from "../data/materials";
-import type { Tone } from "../store";
-import { eulReul } from "./josa";
-import { QUESTIONS, questionsFor } from "../data/questions";
 
 export type AgentReply = { text: string; concept?: string; live: boolean };
 
@@ -39,89 +36,13 @@ export async function isLive() {
   return liveCache;
 }
 
-export const TONES: { k: Tone; desc: string; sample: string }[] = [
-  { k: "기본", desc: "친절하고 차분하게", sample: "COUNT(*)는 모든 행을 세요." },
-  { k: "MZ", desc: "친구처럼 가볍고 짧게", sample: "COUNT(*)는 그냥 다 셈 ㅇㅇ" },
-  { k: "선생님", desc: "차근차근 수업하듯이", sample: "COUNT(*)는 모든 행을 셉니다." },
-  { k: "F감성", desc: "공감하고 응원하면서", sample: "헷갈릴 만해요, 같이 볼게요 😊" },
-  { k: "T감성", desc: "결론부터 논리적으로", sample: "결론: COUNT(*)는 NULL도 셉니다." },
-];
-
-/** Tells the live model how to sound; the facts and teaching rules stay the same. */
-export const TONE_GUIDE: Record<Tone, string> = {
-  기본: "친절하고 차분한 해요체로 답한다.",
-  MZ: "20대 친구에게 말하듯 가볍고 짧게 답한다. 음슴체(~임, ~함)와 가벼운 유행어를 조금 섞고, 이모지는 한 개 이하로 쓴다. 내용의 정확성은 그대로 지킨다.",
-  선생님: "차분한 선생님처럼 합쇼체(~습니다)로 답한다. 개념, 예시, 정리 순서로 수업하듯 설명한다.",
-  F감성: "먼저 학습자의 마음에 공감하고 격려한 뒤 따뜻한 해요체로 설명한다.",
-  T감성: "결론부터 말하고, 짧고 논리적인 해요체로 군더더기 없이 답한다.",
-};
-
-/** Sentence endings rewritten per tone for the offline tutor, longest first so "거예요" wins over "예요". */
-const ENDINGS: Partial<Record<Tone, [RegExp, string][]>> = {
-  MZ: [
-    [/거예요([.!?])/g, "거임$1"],
-    [/이에요([.!?])/g, "임$1"],
-    [/예요([.!?])/g, "임$1"],
-    [/있어요([.!?])/g, "있음$1"],
-    [/없어요([.!?])/g, "없음$1"],
-    [/돼요([.!?])/g, "됨$1"],
-    [/해요([.!?])/g, "함$1"],
-    [/나와요([.!?])/g, "나옴$1"],
-    [/빠져요([.!?])/g, "빠짐$1"],
-    [/하세요([.!?])/g, "하셈$1"],
-    // Anything else in 해요체 drops to friendly 반말: "골라요." → "골라.", "볼까요?" → "볼까?"
-    [/([가-힣])(?<!세)요([.!?])/g, "$1$2"],
-  ],
-  선생님: [
-    [/거예요([.!?])/g, "것입니다$1"],
-    [/이에요([.!?])/g, "입니다$1"],
-    [/예요([.!?])/g, "입니다$1"],
-    [/있어요([.!?])/g, "있습니다$1"],
-    [/없어요([.!?])/g, "없습니다$1"],
-    [/돼요([.!?])/g, "됩니다$1"],
-    [/해요([.!?])/g, "합니다$1"],
-    [/나와요([.!?])/g, "나옵니다$1"],
-    [/빠져요([.!?])/g, "빠집니다$1"],
-    [/봐요([.!?])/g, "봅시다$1"],
-    [/이래요([.!?])/g, "이렇습니다$1"],
-    [/골라요([.!?])/g, "고릅니다$1"],
-    [/남겨요([.!?])/g, "남깁니다$1"],
-    [/사라져요([.!?])/g, "사라집니다$1"],
-    [/채워요([.!?])/g, "채웁니다$1"],
-    [/걸러요([.!?])/g, "거릅니다$1"],
-    [/넘어가요([.!?])/g, "넘어갑시다$1"],
-    [/외워요([.!?])/g, "외웁시다$1"],
-    [/세요([.!?])/g, "세요$1"],
-  ],
-};
-
-const TONE_WRAP: Record<Tone, { intro?: string; outro?: string }> = {
-  기본: {},
-  MZ: { intro: "오케이, 핵심만 바로 정리해 줌 👌", outro: "이거 시험에 진짜 자주 나옴. 꼭 챙기셈." },
-  선생님: { intro: "좋은 질문입니다. 하나씩 짚어 보겠습니다.", outro: "오늘 배운 내용은 한 번 더 소리 내어 정리해 보세요." },
-  F감성: { intro: "이 부분 많이들 헷갈려 해요. 지금처럼 물어보는 것 자체가 잘하고 있다는 뜻이에요 😊", outro: "천천히 해도 괜찮아요. 막히면 언제든 같이 봐요!" },
-  T감성: { intro: "결론부터 말할게요." },
-};
-
-/** Reshapes an offline answer into the chosen tone without touching its facts. */
-export function applyTone(text: string, tone: Tone) {
-  if (tone === "기본") return text;
-  let out = text;
-  for (const [re, to] of ENDINGS[tone] ?? []) out = out.replace(re, to);
-  if (tone === "T감성") out = out.replace(/\s*[😊👌🙂]/gu, "");
-  const { intro, outro } = TONE_WRAP[tone];
-  return [intro, out, outro].filter(Boolean).join("\n\n");
-}
-
 export async function askAgent(opts: {
   material: Material;
   section?: Section;
   prompt: string;
   history: { role: "user" | "assistant"; content: string }[];
   weak: string[];
-  tone?: Tone;
 }): Promise<AgentReply> {
-  const tone = opts.tone ?? "기본";
   const concept = detectConcept(opts.prompt, opts.section);
   if (await isLive()) {
     try {
@@ -132,7 +53,6 @@ export async function askAgent(opts: {
           mode: "chat",
           material: materialToText(opts.material),
           weak: opts.weak,
-          tone: TONE_GUIDE[tone],
           history: opts.history,
           prompt: opts.section ? `[지금 읽는 구간: ${opts.section.title}]\n${opts.prompt}` : opts.prompt,
         }),
@@ -143,10 +63,7 @@ export async function askAgent(opts: {
     }
   }
   await new Promise((res) => setTimeout(res, 650));
-  const lastAssistant = [...opts.history].reverse().find((h) => h.role === "assistant")?.content;
-  const graded = gradeCheck(lastAssistant, opts.prompt);
-  const text = graded ?? offline(opts.prompt, opts.material, opts.section, concept, opts.weak);
-  return { text: applyTone(text, tone), concept, live: false };
+  return { text: offline(opts.prompt, opts.material, opts.section, concept, opts.weak), concept, live: false };
 }
 
 const EXPLAIN: Record<string, { easy: string; example: string; point: string; confuse: string }> = {
@@ -194,58 +111,8 @@ const EXPLAIN: Record<string, { easy: string; example: string; point: string; co
   },
 };
 
-/** Opening line of the tutor's own check question. */
-const CHECK_LEAD = "좋아요, 제가 질문할게요.";
-
-/** When the learner answers the tutor's check question, compare their words with the question's key points. */
-function gradeCheck(lastAssistant: string | undefined, answer: string) {
-  if (!lastAssistant) return null;
-  // Tone rewrites can change the lead line, so the question itself (bolded) is the reliable marker.
-  const q = QUESTIONS.find((x) => x.type === "대화형" && lastAssistant.includes(`**${x.stem}**`));
-  if (!q?.talk) return null;
-  const said = answer.toLowerCase().replace(/\s+/g, "");
-  const hit = q.talk.map((pt) => pt.keywords.some((k) => said.includes(k.toLowerCase().replace(/\s+/g, ""))));
-  const n = hit.filter(Boolean).length;
-  const lead =
-    n === q.talk.length ? "완벽해요! 핵심을 모두 짚었어요." : n > 0 ? `좋아요, 핵심 ${q.talk.length}개 중 ${n}개를 짚었어요.` : "아직 핵심이 잘 드러나지 않았어요. 같이 다시 볼게요.";
-  return [
-    lead,
-    ...q.talk.map((pt, i) => `- ${hit[i] ? "짚은 부분" : "빠진 부분"} · ${pt.label}`),
-    "",
-    `**모범 답안** · ${q.explanation}`,
-    "",
-    n === q.talk.length ? "이 개념은 확인 문제로 한 번 더 굳혀볼까요?" : "빠진 부분을 넣어서 한 번 더 설명해 보거나, 확인 문제로 넘어가 봐요.",
-  ].join("\n");
-}
-
 function offline(prompt: string, m: Material, section: Section | undefined, concept: string | undefined, weak: string[]) {
   const p = prompt.replace(/\s/g, "");
-  // Quick actions on an intro page still need a concept to work with: start from the unit's first one.
-  const here = section?.concept ?? m.sections.find((s) => s.concept)?.concept;
-
-  if (/핵심만|3줄/.test(p)) {
-    const c = concept && EXPLAIN[concept] ? concept : here;
-    if (!c) return `**${m.title}** 자료에서 핵심을 찾지 못했어요.`;
-    const e = EXPLAIN[c];
-    // Skip analogy openers ("출석부를 떠올려 보세요.") and lead with the sentence that names the terms.
-    const first = (s: string) => {
-      const parts = s.split(/(?<=[.!?])\s/);
-      return (parts.find((x) => x.includes("**")) ?? parts[0]).replace(/\*\*/g, "");
-    };
-    return [
-      `**${section?.title ?? m.title}** 핵심만 3줄로 정리했어요.`,
-      `1. ${first(e.easy)}`,
-      `2. ${first(e.example)}`,
-      `3. 시험 포인트 · ${e.point}`,
-    ].join("\n");
-  }
-
-  if (/이해했는지|확인해줘/.test(p)) {
-    const c = concept && EXPLAIN[concept] ? concept : here;
-    const q = c ? questionsFor(c).find((x) => x.type === "대화형") : undefined;
-    if (!q) return "지금 구간에는 확인할 질문이 아직 없어요. 다른 구간으로 이동해서 다시 눌러 주세요.";
-    return [CHECK_LEAD, `**${q.stem}**`, "", "보기를 고르는 대신 내 말로 설명해 보세요. 답을 보내면 핵심을 짚었는지 봐 드릴게요."].join("\n");
-  }
   if (/무엇을할수|뭘할수|뭐할수|기능/.test(p))
     return [
       "저는 지금 읽는 자료를 같이 보면서 이렇게 도와요.",
@@ -262,11 +129,10 @@ function offline(prompt: string, m: Material, section: Section | undefined, conc
       `**${m.title}** 핵심만 정리했어요.`,
       ...m.sections.filter((s) => s.concept).map((s) => `- **${CONCEPTS[s.concept!].name}**: ${EXPLAIN[s.concept!].easy.replace(/\*\*/g, "").split(". ")[0]}.`),
       "",
-      "더 자세한 암기 포인트가 필요하면 **시험 포인트 알려줘**라고 물어보세요.",
+      "자세한 암기 포인트는 상단 **요약** 탭에서 볼 수 있어요.",
     ].join("\n");
 
-  const quick = /예시로설명|비교해줘/.test(p);
-  const c = concept && EXPLAIN[concept] ? concept : quick ? here : section?.concept;
+  const c = concept && EXPLAIN[concept] ? concept : section?.concept;
   if (!c) {
     if (section?.id === "intro")
       return `지금은 **${m.title}** 인트로예요. 이 단원은 ${m.sections
@@ -280,7 +146,7 @@ function offline(prompt: string, m: Material, section: Section | undefined, conc
   const wantsExample = /예시|예를|example/.test(p);
   const wantsPoint = /시험|포인트|출제/.test(p);
   const wantsCompare = /비교|차이|다른/.test(p);
-  const lines = [wantsExample ? e.example : wantsPoint ? `**시험 포인트** · ${e.point}` : wantsCompare ? `**${e.confuse}**${eulReul(e.confuse).slice(e.confuse.length)} 비교하면 이래요.\n${e.easy}` : e.easy];
+  const lines = [wantsExample ? e.example : wantsPoint ? `**시험 포인트** · ${e.point}` : wantsCompare ? `**${e.confuse}**를 비교하면 이래요.\n${e.easy}` : e.easy];
   if (!wantsExample) lines.push("", `예를 들면, ${e.example}`);
   if (weak.includes(name)) lines.push("", `지난번에 **${name}**에서 틀린 적이 있어요. 이번엔 확인 문제로 꼭 짚고 넘어가요.`);
   lines.push("", "출처: 학습 자료 · " + (m.sections.find((s) => s.concept === c)?.title ?? m.title));
