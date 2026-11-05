@@ -16,12 +16,15 @@ const SYSTEM = `너는 SQLD 시험을 준비하는 학습자의 "AI 리딩 파�
 - 정답을 바로 알려주지 말고, 문제 관련 질문에는 힌트부터 단계적으로 준다.
 - 설명을 마친 뒤엔 "이해했는지 짧은 문제로 확인해볼까요?" 같은 다음 학습 행동을 한 줄로 제안한다.
 - 학습자의 취약 개념(<weak>)이 질문과 관련 있으면 자연스럽게 연결한다.
-- 마크다운은 **굵게**와 줄바꿈, "- " 목록만 쓴다.`;
+- 마크다운은 **굵게**와 줄바꿈, "- " 목록만 쓴다.
+- 말투는 <tone>의 지시를 따르되, 위 원칙과 내용의 정확성은 바꾸지 않는다.`;
 
 type Body = {
   mode: "chat" | "explain" | "diagnose";
   material: string;
   weak?: string[];
+  /** How to sound, already written as an instruction by the client. */
+  tone?: string;
   history?: { role: "user" | "assistant"; content: string }[];
   prompt: string;
 };
@@ -69,7 +72,7 @@ export async function handleAgentRequest(req: IncomingMessage, res: ServerRespon
         { type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } },
         {
           type: "text",
-          text: `<material>\n${body.material}\n</material>\n<weak>${(body.weak ?? []).join(", ") || "없음"}</weak>`,
+          text: `<material>\n${body.material}\n</material>\n<weak>${(body.weak ?? []).join(", ") || "없음"}</weak>\n<tone>${(body.tone ?? "친절하고 차분한 해요체로 답한다.").slice(0, 300)}</tone>`,
         },
       ],
       messages: [...history, { role: "user", content: body.prompt }],

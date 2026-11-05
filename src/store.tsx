@@ -28,6 +28,12 @@ export type ChatMsg = {
   card?: { kind: "quiz"; qid: string; result?: { correct: boolean; tag?: ErrorTag } };
 };
 
+/** How the AI agent talks: plain, playful, teacherly, warm, or straight to the point. */
+export type Tone = "기본" | "MZ" | "선생님" | "F감성" | "T감성";
+
+/** A finished conversation, kept so the learner can reopen it from the history list. */
+export type SavedChat = { id: string; materialId: string; at: number; messages: ChatMsg[] };
+
 type State = {
   user: { name: string } | null;
   setup: { dailyMinutes: number; diagnosed: boolean } | null;
@@ -36,6 +42,8 @@ type State = {
   notes: Note[];
   read: Record<string, string[]>;
   chats: Record<string, ChatMsg[]>;
+  history: SavedChat[];
+  tone: Tone;
   minutes: Record<string, number>;
   lastMaterial?: { id: string; section: string };
 };
@@ -49,6 +57,9 @@ type Action =
   | { type: "deleteNote"; id: string }
   | { type: "read"; materialId: string; sectionId: string }
   | { type: "chat"; materialId: string; messages: ChatMsg[] }
+  | { type: "newChat"; materialId: string }
+  | { type: "setTone"; tone: Tone }
+  | { type: "openChat"; id: string }
   | { type: "tick"; minutes: number }
   | { type: "reset" };
 
@@ -57,7 +68,7 @@ const DAY = 86_400_000;
 /** Review intervals in days; a correct review moves one step right, a miss goes back to the start. */
 export const INTERVALS = [1, 3, 7, 14];
 
-const initial: State = { user: null, setup: null, attempts: [], reviews: [], notes: [], read: {}, chats: {}, minutes: {} };
+const initial: State = { user: null, setup: null, attempts: [], reviews: [], notes: [], read: {}, chats: {}, history: [], tone: "기본", minutes: {} };
 
 function load(): State {
   try {
@@ -127,6 +138,22 @@ function reducer(s: State, a: Action): State {
     }
     case "chat":
       return { ...s, chats: { ...s.chats, [a.materialId]: a.messages.slice(-40) } };
+    case "setTone":
+      return { ...s, tone: a.tone };
+    case "newChat": {
+      const current = s.chats[a.materialId] ?? [];
+      if (!current.length) return s;
+      const saved: SavedChat = { id: uid(), materialId: a.materialId, at: Date.now(), messages: current };
+      return { ...s, chats: { ...s.chats, [a.materialId]: [] }, history: [saved, ...s.history].slice(0, 30) };
+    }
+    case "openChat": {
+      const target = s.history.find((h) => h.id === a.id);
+      if (!target) return s;
+      const current = s.chats[target.materialId] ?? [];
+      const rest = s.history.filter((h) => h.id !== a.id);
+      const kept = current.length ? [{ id: uid(), materialId: target.materialId, at: Date.now(), messages: current }, ...rest] : rest;
+      return { ...s, chats: { ...s.chats, [target.materialId]: target.messages }, history: kept.slice(0, 30) };
+    }
     case "tick": {
       const k = todayKey();
       return { ...s, minutes: { ...s.minutes, [k]: (s.minutes[k] ?? 0) + a.minutes } };
